@@ -7,19 +7,19 @@
 from PIL import Image 
 import cv2
 
-def genData(data):
-    newd=[]
+def convertToBinary(data):
+    newdata = []
     for i in data:
-        newd.append(format(ord(i), '08b'))
-    return newd
+        newdata.append(format(ord(i), '08b'))
+    return newdata
     
 
-def modifypixels(pix, data):
-    datalist = genData(data)
+def encodepixels(pix, data):
+    datalist = convertToBinary(data)
     lendata = len(datalist)
-    imdata = iter(pix)
+    image_data = iter(pix)
     for i in range(lendata):
-        pix = [value for value in imdata.__next__()[:3] + imdata.__next__()[:3] + imdata.__next__()[:3]]
+        pix = [value for value in image_data.__next__()[:3] + image_data.__next__()[:3] + image_data.__next__()[:3]]
         for j in range(0, 8):
             if (datalist[i][j] == "0" and pix[j] % 2 != 0):
                 pix[j] -= 1
@@ -42,11 +42,11 @@ def modifypixels(pix, data):
         yield pix[3:6]
         yield pix[6:9]
         
-def encoder(newimg, data):
-    w = newimg.size[0]
+def encode_image(new_image, data):
+    w = new_image.size[0]
     (x, y) = (0, 0)
-    for pixel in modifypixels(newimg.getdata(), data):
-        newimg.putpixel((x, y), pixel)
+    for pixel in encodepixels(new_image.getdata(), data):
+        new_image.putpixel((x, y), pixel)
         if (x == w - 1):
             x = 0
             y += 1
@@ -62,42 +62,47 @@ def encode():
     if (len(data) == 0):
         raise ValueError('Data is empty')
 
-    newimg = image.copy()
-    encoder(newimg, data)
+    new_image = image.copy()
+    encode_image(new_image, data)
 
     new_img_name = input("Enter the image name you want to save it as with extension format:")
-    newimg.save((path+new_img_name), str(new_img_name.split(".")[1].upper()))
+    new_image.save((path + new_img_name), str(new_img_name.split(".")[1].upper()))
     
 def decode():
     path="./"
     img = str(input("Enter the image name you want to decode, with extension format:"))
-    image = Image.open((path+img), 'r')
+    image = Image.open((path + img), 'r')
 
     data = ''
-    imgdata = iter(image.getdata())
+    image_data = iter(image.getdata())
     print ("The image to be decoded:")
     print ("\n")
-    img1=cv2.imread((path + img))
-    cv2.imshow("New img",img1)
+    image1 = cv2.imread((path + img))
+    cv2.imshow("New img", image1)
     cv2.waitKey(0)
     while (True):
-        pixels = [value for value in imgdata.__next__()[:3] +
-                                imgdata.__next__()[:3] +
-                                imgdata.__next__()[:3]]
+        pixels = [value for value in image_data.__next__()[:3] +
+                                image_data.__next__()[:3] +
+                                image_data.__next__()[:3]]
 
-        binstr = ''
+        binary_string = ''
 
         for i in pixels[:8]:
             if (i % 2 == 0):
-                binstr += '0'
+                binary_string += '0'
             else:
-                binstr += '1'
+                binary_string += '1'
 
-        data += chr(int(binstr, 2))
+        data += chr(int(binary_string, 2))
         if (pixels[-1] % 2 != 0):
             return data
 
 #_main_
+
+"""
+lsb_input.png is an image used for testing
+lsb_output.png is a encoded image of lsb_input.png with the message "this is to test lsb steganography"
+"""
 
 a = int(input(":: Hii.Press 1 to encode an image with your own secret data. Press 2 to decode an image message from your computer, that you have received.::\n"
                         "1. Encode\n2. Decode\n"))
